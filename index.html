@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <title>Real-time Super Chat!</title>
     <style>
-        #zone_chat strong {
+        #chat_zone div strong {
             color: white;
             background-color: black;
             padding: 2px;
@@ -17,7 +17,7 @@
     <h1>Real-time Super Chat!</h1>
 
     <form id="chat_form">
-        <input type="text" name="message" id="message" placeholder="Your message..." size="50" autofocus />
+        <input type="text" name="text" id="text" placeholder="Your message..." size="50" autofocus />
         <input type="submit" id="send_message" value="Send" />
     </form>
 
@@ -31,20 +31,44 @@
         while (!username || username.length < 3)
             username = prompt("what's your name (must be at least 3 caracters)");
 
+        // user join the chat
         socket.emit("join", { name: username, time: formatDate() });
 
+        //get message from server when any user send a message
+        socket.on("message", ({ time, from, message }) => {
+            addMessage(time, from, message)
+        })
 
-
+        //when the other user join the chat 
         socket.on("join", ({ name, time }) => {
+            //display a new user join the chat
             userJoin(name, time);
         })
 
+        //sending a message to the server with enter click
+        document.getElementById('chat_form').addEventListener('submit', function (e) {
+            e.preventDefault();//dont reload the page when clicking enter
+            let text = document.getElementById("text");//message to sent
+            if (text.length === 0) return //must be not empty  
+            socket.emit('message', { message: text.value, time: formatDate() }); //send the message
+            text.value = "";
+        }, false);
+
+        //add line user join
         userJoin = (name, time) => {
             console.log(time, name);
             let oldMessage = document.getElementById("chat_zone");
-            let message = `<div> ${time} - ${name} join the chat ! </div>`;
-            oldMessage.innerHTML = message + oldMessage.innerHTML;
+            let line = `<div> ${time} - ${name} join the chat ! </div>`;
+            oldMessage.innerHTML = line + oldMessage.innerHTML;
         }
+
+        //add a message when any user send a message 
+        addMessage = (time, from, message) => {
+            let oldMessage = document.getElementById("chat_zone");
+            let line = `<div> ${time}- <strong>${from}</strong> : ${message} </div>`;
+            oldMessage.innerHTML = line + oldMessage.innerHTML;
+        }
+
 
         function formatDate() {
             date = new Date();
@@ -63,6 +87,7 @@
 
             return day + ' ' + monthNames[monthIndex] + ' ' + year + ' ' + hours + ':' + minutes + ':' + seconds;
         }
+
     </script>
 </body>
 

@@ -14,6 +14,17 @@ io.sockets.on("connection", socket => {
     socket.username = name;
     socket.broadcast.emit("join", { name: name, time: time });
   });
+
+  socket.on("message", ({ message, time }) => {
+    console.log(message, time);
+    let messageObj = {
+      message,
+      from: socket.username,
+      time
+    };
+    socket.broadcast.emit("message", messageObj);
+    socket.emit("message", messageObj);
+  });
 });
 
 server.listen(8080);
