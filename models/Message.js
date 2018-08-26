@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const MessageSchema = new mongoose.Schema({
   from: {
     type: String,
@@ -5,11 +6,11 @@ const MessageSchema = new mongoose.Schema({
     minlength: 3,
     maxlength: 30
   },
-  date: { type: Date, default: Date.now },
+  time: { type: Date, default: Date.now },
   message: {
     type: String,
     required: true,
-    minlength: 3,
+    minlength: 1,
     maxlength: 300
   }
 });

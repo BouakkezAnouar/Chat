@@ -13,34 +13,41 @@ mongoose
   .then(() => console.log("connecting to mongo database"))
   .catch(err => console.log(err.message));
 
-const message = new Message({
-  from: "anouar",
-  message: "salut tous le monde !"
-});
-
-//message.save().then(res => console.log(res));
-
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
 
+//send messages to user
 io.sockets.on("connection", socket => {
-  socket.on("join", ({ name, time }) => {
-    name = ent.encode(name);
-    socket.username = name;
+  //when user connect send him all messages
+  Message.find()
+    .then(messages => socket.emit("messages", messages))
+    .catch(err => console.log(err.message));
 
-    socket.broadcast.emit("join", { name: name, time: time });
+  socket.on("join", async username => {
+    username = ent.encode(username);
+    socket.username = username;
+
+    socket.broadcast.emit("join", {
+      username,
+      time: new Date()
+    });
   });
 
-  socket.on("message", ({ message, time }) => {
+  socket.on("message", async message => {
     message = ent.encode(message);
-    let messageObj = {
+
+    let newMessage = new Message({
       message,
-      from: socket.username,
-      time
-    };
-    socket.broadcast.emit("message", messageObj);
-    socket.emit("message", messageObj);
+      from: socket.username
+    });
+    try {
+      newMessage = await newMessage.save();
+    } catch (err) {
+      console.log(err.message);
+    }
+    socket.broadcast.emit("message", newMessage);
+    socket.emit("message", newMessage);
   });
 });
 

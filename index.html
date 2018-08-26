@@ -10,12 +10,16 @@
             background-color: black;
             padding: 2px;
         }
+
+        .join {
+            background-color: rgba(201, 76, 76, 0.3);
+        }
     </style>
 </head>
 
 <body>
     <h1>Real-time Super Chat!</h1>
-
+    <h2 id="username"></h2>
     <form id="chat_form">
         <input type="text" name="text" id="text" placeholder="Your message..." size="50" autofocus />
         <input type="submit" id="send_message" value="Send" />
@@ -31,63 +35,51 @@
         while (!username || username.length < 3)
             username = prompt("what's your name (must be at least 3 caracters)");
 
+        document.getElementById("username").innerHTML = username;
+
+        socket.on("messages", messages => {
+            for (let message of messages) {
+                addMessage(message);
+            };
+        });
+
         // user join the chat
-        socket.emit("join", { name: username, time: formatDate() });
+        socket.emit("join", username);
 
         //get message from server when any user send a message
-        socket.on("message", ({ time, from, message }) => {
-            addMessage(time, from, message)
+        socket.on("message", (message) => {
+            addMessage(message)
         })
 
-        //when the other user join the chat 
-        socket.on("join", ({ name, time }) => {
+        //when other user join the chat 
+        socket.on("join", ({ username, time }) => {
             //display a new user join the chat
-            userJoin(name, time);
+            userJoin(username, time);
         })
 
         //sending a message to the server with enter click
         document.getElementById('chat_form').addEventListener('submit', function (e) {
             e.preventDefault();//dont reload the page when clicking enter
             let text = document.getElementById("text");//message to sent
-            if (text.length === 0) return //must be not empty  
-            socket.emit('message', { message: text.value, time: formatDate() }); //send the message
+            if (text.value.length === 0) return;//must be not empty  
+            socket.emit('message', text.value); //send the message
             text.value = "";
         }, false);
 
         //add line user join
-        userJoin = (name, time) => {
-            console.log(time, name);
+        userJoin = (username, time) => {
+
             let oldMessage = document.getElementById("chat_zone");
-            let line = `<div> ${time} - ${name} join the chat ! </div>`;
+            let line = `<div class="join"> ${time} - ${username} join the chat ! </div>`;
             oldMessage.innerHTML = line + oldMessage.innerHTML;
         }
 
         //add a message when any user send a message 
-        addMessage = (time, from, message) => {
+        addMessage = (message) => {
             let oldMessage = document.getElementById("chat_zone");
-            let line = `<div> ${time}- <strong>${from}</strong> : ${message} </div>`;
+            let line = `<div> ${message.time}- <strong>${message.from}</strong> : ${message.message} </div>`;
             oldMessage.innerHTML = line + oldMessage.innerHTML;
         }
-
-
-        function formatDate() {
-            date = new Date();
-            let monthNames = [
-                "January", "February", "March",
-                "April", "May", "June", "July",
-                "August", "September", "October",
-                "November", "December"
-            ];
-            let seconds = date.getSeconds().toString().padStart(2, '0');
-            let minutes = date.getMinutes().toString().padStart(2, '0');
-            let hours = date.getHours().toString().padStart(2, '0');
-            let day = date.getDate();
-            let monthIndex = date.getMonth();
-            let year = date.getFullYear();
-
-            return day + ' ' + monthNames[monthIndex] + ' ' + year + ' ' + hours + ':' + minutes + ':' + seconds;
-        }
-
     </script>
 </body>
 
